@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✈️ Aviation Weather Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement(
+                {
+                    pageLanguage: 'en',
+                    includedLanguages: 'en,ar,zh-CN,fr,de,hi,it,ja,ko,pt,ru,es,th,vi',
+                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                    autoDisplay: false,
+                    gaTrack: false
+                },
+                'google_translate_element'
+            );
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <style>
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background-color: #f0f0f0;
+            position: relative;
+        }
+        .map-container {
+            position: relative;
+            width: 100%;
+            margin: 20px 0;
+        }
+        .map-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+        }
+        .goog-te-gadget {
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 0.9em !important;
+        }
+        .goog-te-gadget-simple {
+            background-color: var(--card-background) !important;
+            border: 1px solid var(--subtle-border-color) !important;
+            border-radius: var(--border-radius) !important;
+            padding: 8px 16px !important;
+            cursor: pointer !important;
+            transition: all var(--transition-speed) ease !important;
+        }
+        .goog-te-gadget-simple:hover {
+            background-color: rgba(93, 79, 255, 0.05) !important;
+        }
+        .goog-te-menu-value {
+            color: var(--text-color) !important;
+            text-decoration: none !important;
+        }
+        .goog-te-menu-value span {
+            color: var(--primary-color) !important;
+        }
+        .goog-te-menu-value:hover {
+            text-decoration: none !important;
+        }
+        .goog-te-banner-frame {
+            display: none !important;
+        }
+        body {
+            top: 0 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-cloud-sun"></i> Aviation Weather Dashboard</h1>
+            <p class="subtitle">Your real-time weather companion for safe flights</p>
+            <div id="google_translate_element" class="translate-container"></div>
+        </header>
+        
+        <div class="search-container">
+            <div class="input-group">
+                <input type="text" id="routeInput" placeholder="Enter flight plan (e.g., KPHX,1500,KBXK,12000,KPSP,20000,KLAX,50)">
+                <button id="searchBtn">
+                    <span class="button-text"><i class="fas fa-search"></i> Get Weather <i class="fas fa-cloud-sun-rain"></i></span>
+                    <div class="loading-spinner"></div>
+                </button>
+            </div>
+            <p class="input-help">Format: Airport ID, Altitude (ft), Airport ID, Altitude (ft), etc.</p>
+        </div>
+
+        <div class="weather-display">
+            <div class="weather-cards-container">
+                <div class="weather-card" id="metarCard">
+                    <h2>
+                        <span><i class="fas fa-plane"></i> METAR</span>
+                        <i class="fas fa-wind"></i>
+                    </h2>
+                    <div class="weather-content" id="metarContent">
+                        <div class="no-data">Enter a flight plan to see METAR reports</div>
+                    </div>
+                </div>
+
+                <div class="weather-card" id="tafCard">
+                    <h2>
+                        <span class="notranslate" data-google-translate-ignore><i class="fas fa-calendar-alt"></i>TAF</span>
+                        <i class="fas fa-clock"></i>
+                    </h2>
+                    <div class="weather-content" id="tafContent">
+                        <div class="no-data">Enter a flight plan to see TAF reports</div>
+                    </div>
+                </div>
+
+                <div class="weather-card" id="pirepCard">
+                    <h2>
+                        <span><i class="fas fa-comment-alt"></i> PIREP</span>
+                        <i class="fas fa-user-pilot"></i>
+                    </h2>
+                    <div class="weather-content" id="pirepContent">
+                        <div class="no-data">Enter a flight plan to see PIREP reports</div>
+                    </div>
+                </div>
+
+                <div class="weather-card" id="sigmetCard">
+                    <h2>
+                        <span><i class="fas fa-exclamation-triangle"></i> SIGMET</span>
+                        <i class="fas fa-radiation"></i>
+                    </h2>
+                    <div class="weather-content" id="sigmetContent">
+                        <div class="no-data">Enter a flight plan to see SIGMET reports</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-and-summary">
+            <div class="map-container">
+                <h2><i class="fas fa-map-marked-alt"></i> Flight Path & Weather <i class="fas fa-globe-americas"></i></h2>
+                <div class="map-loading">Loading map...</div>
+                <div id="map"></div>
+            </div>
+
+            <div class="weather-summary">
+                <h2><i class="fas fa-clipboard-list"></i> Route Summary</h2>
+                <div id="summaryContent"></div>
+            </div>
+        </div>
+    </div>
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+    <script src="script.js"></script>
+</body>
+</html> 
