@@ -552,7 +552,7 @@ async function getAirportCoordinates(airportCode) {
         // Using AirLabs API
         const response = await fetch(`${config.apiEndpoint}/airports?iata_code=${airportCode}&api_key=${config.apiKey}`);
         const data = await response.json();
-
+        
         if (data.error) {
             throw new Error(`API Error: ${data.error.message}`);
         }
@@ -564,7 +564,7 @@ async function getAirportCoordinates(airportCode) {
                 lng: parseFloat(airport.lng),
                 name: airport.name
             };
-
+            
             // Cache the result
             airportCoordinatesCache[airportCode] = coordinates;
             return coordinates;
